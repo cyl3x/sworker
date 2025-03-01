@@ -1,0 +1,25 @@
+[package]
+name = "sworker"
+version = "1.0.0"
+authors = ["cyl3x <cyl3x@posteo.de>"]
+edition = "2021"
+repository = "https://github.com/cyl3x/sworker"
+description = "Workspace utility and manager for sway"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = ["sway", "workspace"]
+
+[[bin]]
+name = "sworker"
+path = "src/main.rs"
+
+[profile.release]
+codegen-units = 1
+debug = false
+lto = "fat"
+opt-level = 3
+strip = "debuginfo"
+
+[dependencies]
+clap = { version = "4.5.31", features = ["derive"] }
+swayipc = "3.0.3"
