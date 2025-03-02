@@ -1,5 +1,5 @@
 use clap::Parser;
-use cli::{Cli, Action};
+use cli::{Action, Cli};
 use swayipc::Connection;
 use sworker::{process_event, Manager};
 
@@ -42,6 +42,9 @@ fn main() -> Result<(), swayipc::Error> {
                 Action::Prev => manager.group_move_prev()?,
                 Action::Position(position) => manager.group_move_to(position)?,
             }
+        }
+        Cli::Reorder => {
+            Manager::new(Connection::new()?)?.reorder()?;
         }
         Cli::Daemon => {
             Manager::new(Connection::new()?)?.reorder()?;

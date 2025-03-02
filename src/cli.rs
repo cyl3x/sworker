@@ -5,6 +5,8 @@ use clap::builder::PossibleValue;
 pub enum Cli {
     /// Start a daemon that reorders workspaces on workspace creation and output changes
     Daemon,
+    /// Reorder all workspaces to their correct number/index
+    Reorder,
     /// Change focus to the desired position of the focused group.
     Focus {
         /// Direction or position to focus.
@@ -52,7 +54,7 @@ impl clap::ValueEnum for Action {
             Action::Position(9),
         ]
     }
-    
+
     fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
         match self {
             Action::Next => Some(PossibleValue::new("next")),
