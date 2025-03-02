@@ -10,11 +10,19 @@ impl Numberer {
     pub fn new(workspaces: &[Workspace], outputs: &[Output]) -> Self {
         let mut numberer = Self(BTreeMap::new());
 
-        for (o_idx, output) in outputs.iter().enumerate() {
+        let mut group = 1;
+
+        for output in outputs.iter() {
             for (w_idx, workspace) in workspaces.iter().filter(|ws| ws.output == output.name).enumerate() {
-                let num = (o_idx + 1) * 10 + (w_idx + 1);
+                let position = w_idx + 1;
+
+                // additional groups per output should also start with a position of 1: position / 10
+                let num = group * 10 + position + (position / 10);
+
                 numberer.0.insert(workspace.id, num as i32);
             }
+
+            group = (numberer.0.values().max().unwrap_or(&0) / 10 + 1) as usize;
         }
 
         numberer
