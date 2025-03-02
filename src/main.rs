@@ -1,5 +1,5 @@
 use clap::Parser;
-use cli::{Cli, PositionCommand};
+use cli::{Cli, Action};
 use swayipc::Connection;
 use sworker::{process_event, Manager};
 
@@ -7,40 +7,40 @@ mod cli;
 
 fn main() -> Result<(), swayipc::Error> {
     match Cli::parse() {
-        Cli::Focus { position } => {
+        Cli::Focus { action } => {
             let mut manager = Manager::new(Connection::new()?)?;
 
-            match position {
-                PositionCommand::Next => manager.position_focus_next()?,
-                PositionCommand::Prev => manager.position_focus_prev()?,
-                PositionCommand::Position(position) => manager.position_focus_to(position)?,
+            match action {
+                Action::Next => manager.position_focus_next()?,
+                Action::Prev => manager.position_focus_prev()?,
+                Action::Position(position) => manager.position_focus_to(position)?,
             }
         }
-        Cli::Move { position } => {
+        Cli::Move { action } => {
             let mut manager = Manager::new(Connection::new()?)?;
 
-            match position {
-                PositionCommand::Next => manager.position_move_next()?,
-                PositionCommand::Prev => manager.position_move_prev()?,
-                PositionCommand::Position(position) => manager.position_move_to(position)?,
+            match action {
+                Action::Next => manager.position_move_next()?,
+                Action::Prev => manager.position_move_prev()?,
+                Action::Position(position) => manager.position_move_to(position)?,
             }
         }
-        Cli::FocusGroup { position } => {
+        Cli::FocusGroup { action } => {
             let mut manager = Manager::new(Connection::new()?)?;
 
-            match position {
-                PositionCommand::Next => manager.group_focus_next()?,
-                PositionCommand::Prev => manager.group_focus_prev()?,
-                PositionCommand::Position(position) => manager.group_focus_to(position)?,
+            match action {
+                Action::Next => manager.group_focus_next()?,
+                Action::Prev => manager.group_focus_prev()?,
+                Action::Position(position) => manager.group_focus_to(position)?,
             }
         }
-        Cli::MoveGroup { position } => {
+        Cli::MoveGroup { action } => {
             let mut manager = Manager::new(Connection::new()?)?;
 
-            match position {
-                PositionCommand::Next => manager.group_move_next()?,
-                PositionCommand::Prev => manager.group_move_prev()?,
-                PositionCommand::Position(position) => manager.group_move_to(position)?,
+            match action {
+                Action::Next => manager.group_move_next()?,
+                Action::Prev => manager.group_move_prev()?,
+                Action::Position(position) => manager.group_move_to(position)?,
             }
         }
         Cli::Daemon => {
