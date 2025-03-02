@@ -8,7 +8,7 @@ pub struct Manager {
     pub outputs: Vec<Output>,
     pub numberer: Numberer,
     pub positioner: Positioner,
-    pub is_alone: bool,
+    pub nodes: usize,
 }
 
 impl Manager {
@@ -32,7 +32,7 @@ impl Manager {
             workspaces,
             outputs,
             connection,
-            is_alone: focused_node.nodes.len() <= 1,
+            nodes: focused_node.nodes.len(),
         })
     }
 
@@ -41,7 +41,7 @@ impl Manager {
     }
 
     pub fn position_focus_next(&mut self) -> Result<(), Error> {
-        let num = if self.positioner.is_end() && !self.positioner.is_full() && !self.is_alone {
+        let num = if self.positioner.is_end() && !self.positioner.is_full() && self.nodes > 0 {
             let num = self.numberer.append_at(self.positioner.num());
             println!("position_focus_next: {} | {}", self.positioner.num(), num);
             self.numberer.reorder(&mut self.connection)?;
@@ -57,7 +57,7 @@ impl Manager {
     }
 
     pub fn position_focus_prev(&mut self) -> Result<(), Error> {
-        let num = if self.positioner.is_start() && !self.positioner.is_full() && !self.is_alone {
+        let num = if self.positioner.is_start() && !self.positioner.is_full() && self.nodes > 0 {
             let num = self.numberer.prepend_at(self.positioner.num());
             self.numberer.reorder(&mut self.connection)?;
 
@@ -80,7 +80,7 @@ impl Manager {
     }
 
     pub fn position_move_next(&mut self) -> Result<(), Error> {
-        let num = if self.positioner.is_end() && !self.positioner.is_full() && !self.is_alone {
+        let num = if self.positioner.is_end() && !self.positioner.is_full() && self.nodes > 1 {
             let num = self.numberer.append_at(self.positioner.num());
             self.numberer.reorder(&mut self.connection)?;
 
@@ -97,7 +97,7 @@ impl Manager {
     }
 
     pub fn position_move_prev(&mut self) -> Result<(), Error> {
-        let num = if self.positioner.is_start() && !self.positioner.is_full() && !self.is_alone {
+        let num = if self.positioner.is_start() && !self.positioner.is_full() && self.nodes > 1 {
             let num = self.numberer.prepend_at(self.positioner.num());
             self.numberer.reorder(&mut self.connection)?;
 
