@@ -43,7 +43,6 @@ impl Manager {
     pub fn position_focus_next(&mut self) -> Result<(), Error> {
         let num = if self.positioner.is_end() && !self.positioner.is_full() && self.nodes > 0 {
             let num = self.numberer.append_at(self.positioner.num());
-            println!("position_focus_next: {} | {}", self.positioner.num(), num);
             self.numberer.reorder(&mut self.connection)?;
 
             num
@@ -117,7 +116,7 @@ impl Manager {
         let num = self.positioner.saturating_position_to(position);
 
         self.connection.run_command(format!(
-            "[con_id=__focused__] move container to workspace number {num}, focus"
+            "[con_id=__focused__] move container to workspace number {num}"
         ))?;
 
         Ok(())
@@ -180,7 +179,7 @@ impl Manager {
         }
 
         self.connection.run_command(format!(
-            "[con_id=__focused__] move container to workspace number {num}, focus"
+            "[con_id=__focused__] move container to workspace number {num}"
         ))?;
 
         Ok(())
