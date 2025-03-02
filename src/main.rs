@@ -11,18 +11,36 @@ fn main() -> Result<(), swayipc::Error> {
             let mut manager = Manager::new(Connection::new()?)?;
 
             match position {
-                PositionCommand::Next => manager.focus_next()?,
-                PositionCommand::Prev => manager.focus_prev()?,
-                PositionCommand::Position(position) => manager.focus_to(position)?,
+                PositionCommand::Next => manager.position_focus_next()?,
+                PositionCommand::Prev => manager.position_focus_prev()?,
+                PositionCommand::Position(position) => manager.position_focus_to(position)?,
             }
         }
         Cli::Move { position } => {
             let mut manager = Manager::new(Connection::new()?)?;
 
             match position {
-                PositionCommand::Next => manager.move_next()?,
-                PositionCommand::Prev => manager.move_prev()?,
-                PositionCommand::Position(position) => manager.move_to(position)?,
+                PositionCommand::Next => manager.position_move_next()?,
+                PositionCommand::Prev => manager.position_move_prev()?,
+                PositionCommand::Position(position) => manager.position_move_to(position)?,
+            }
+        }
+        Cli::FocusGroup { position } => {
+            let mut manager = Manager::new(Connection::new()?)?;
+
+            match position {
+                PositionCommand::Next => manager.group_focus_next()?,
+                PositionCommand::Prev => manager.group_focus_prev()?,
+                PositionCommand::Position(position) => manager.group_focus_to(position)?,
+            }
+        }
+        Cli::MoveGroup { position } => {
+            let mut manager = Manager::new(Connection::new()?)?;
+
+            match position {
+                PositionCommand::Next => manager.group_move_next()?,
+                PositionCommand::Prev => manager.group_move_prev()?,
+                PositionCommand::Position(position) => manager.group_move_to(position)?,
             }
         }
         Cli::Daemon => {

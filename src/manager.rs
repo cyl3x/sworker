@@ -3,10 +3,11 @@ use std::collections::HashMap;
 
 use swayipc::{Connection, Error, NodeType, Output, Workspace};
 
-pub struct FocusedInfo {
+pub struct Info {
     group: i32,
+    group_highest: i32,
     position: i32,
-    highest_position: i32,
+    position_highest: i32,
     is_alone: bool,
 }
 
@@ -14,7 +15,7 @@ pub struct Manager {
     connection: Connection,
     workspaces: Vec<Workspace>,
     outputs: Vec<Output>,
-    focused: FocusedInfo,
+    info: Info,
 }
 
 impl Manager {
@@ -33,10 +34,11 @@ impl Manager {
             .expect("workspace of get_workspaces should be in get_tree");
 
         Ok(Self {
-            focused: FocusedInfo {
+            info: Info {
                 group: focused.num / 10,
+                group_highest: outputs.len() as i32,
                 position: focused.num % 10,
-                highest_position: workspaces
+                position_highest: workspaces
                     .iter()
                     .filter(|w| w.num / 10 == focused.num / 10)
                     .last()
@@ -76,16 +78,16 @@ impl Manager {
         Self::reorder_opt(&mut self.connection, &workspaces, &self.outputs)
     }
 
-    pub fn focus_next(&mut self) -> Result<(), Error> {
-        let position = self.focused.position + 1;
+    pub fn position_focus_next(&mut self) -> Result<(), Error> {
+        let position = self.info.position + 1;
 
-        let mut num = self.focused.group * 10 + position;
+        let mut num = self.info.group * 10 + position;
 
-        if position > self.focused.highest_position {
-            if !self.focused.is_alone && self.focused.highest_position != 9 {
+        if position > self.info.position_highest {
+            if !self.info.is_alone && self.info.position_highest != 9 {
                 self.empty_at(num, false)?;
             } else {
-                num = self.focused.group * 10 + 1
+                num = self.info.group * 10 + 1
             }
         }
 
@@ -94,18 +96,18 @@ impl Manager {
         Ok(())
     }
 
-    pub fn focus_prev(&mut self) -> Result<(), Error> {
-        let position = self.focused.position - 1;
+    pub fn position_focus_prev(&mut self) -> Result<(), Error> {
+        let position = self.info.position - 1;
 
-        let mut num = self.focused.group * 10 + position;
+        let mut num = self.info.group * 10 + position;
 
         if position < 1 {
-            if !self.focused.is_alone && self.focused.highest_position != 9 {
-                num = self.focused.group * 10 + 1;
+            if !self.info.is_alone && self.info.position_highest != 9 {
+                num = self.info.group * 10 + 1;
 
                 self.empty_at(num, true)?;
             } else {
-                num = self.focused.group * 10 + self.focused.highest_position
+                num = self.info.group * 10 + self.info.position_highest
             }
         }
 
@@ -114,24 +116,24 @@ impl Manager {
         Ok(())
     }
 
-    pub fn focus_to(&mut self, position: i32) -> Result<(), Error> {
-        let num = self.focused.group * 10 + position.clamp(1, 9);
+    pub fn position_focus_to(&mut self, position: i32) -> Result<(), Error> {
+        let num = self.info.group * 10 + position.clamp(1, 9);
 
         self.connection.run_command(format!("workspace number {num}"))?;
 
         Ok(())
     }
 
-    pub fn move_next(&mut self) -> Result<(), Error> {
-        let position = self.focused.position + 1;
+    pub fn position_move_next(&mut self) -> Result<(), Error> {
+        let position = self.info.position + 1;
 
-        let mut num = self.focused.group * 10 + position;
+        let mut num = self.info.group * 10 + position;
 
-        if position > self.focused.highest_position {
-            if !self.focused.is_alone && self.focused.highest_position != 9 {
+        if position > self.info.position_highest {
+            if !self.info.is_alone && self.info.position_highest != 9 {
                 self.empty_at(num, false)?;
             } else {
-                num = self.focused.group * 10 + 1
+                num = self.info.group * 10 + 1
             }
         }
 
@@ -142,18 +144,18 @@ impl Manager {
         Ok(())
     }
 
-    pub fn move_prev(&mut self) -> Result<(), Error> {
-        let position = self.focused.position - 1;
+    pub fn position_move_prev(&mut self) -> Result<(), Error> {
+        let position = self.info.position - 1;
 
-        let mut num = self.focused.group * 10 + position;
+        let mut num = self.info.group * 10 + position;
 
         if position < 1 {
-            if !self.focused.is_alone && self.focused.highest_position != 9 {
-                num = self.focused.group * 10 + 1;
+            if !self.info.is_alone && self.info.position_highest != 9 {
+                num = self.info.group * 10 + 1;
 
                 self.empty_at(num, true)?;
             } else {
-                num = self.focused.group * 10 + self.focused.highest_position
+                num = self.info.group * 10 + self.info.position_highest
             }
         }
 
@@ -164,8 +166,90 @@ impl Manager {
         Ok(())
     }
 
-    pub fn move_to(&mut self, position: i32) -> Result<(), Error> {
-        let num = self.focused.group * 10 + position.clamp(1, 9);
+    pub fn position_move_to(&mut self, position: i32) -> Result<(), Error> {
+        let num = self.info.group * 10 + position.clamp(1, 9);
+
+        self.connection.run_command(format!(
+            "[con_id=__focused__] move container to workspace number {num}, focus"
+        ))?;
+
+        Ok(())
+    }
+
+    pub fn group_focus_next(&mut self) -> Result<(), Error> {
+        let mut group = self.info.group + 1;
+        
+        if group > self.info.group_highest {
+            group = 1;
+        }
+
+        self.group_focus_to(group)
+    }
+
+    pub fn group_focus_prev(&mut self) -> Result<(), Error> {
+        let mut group = self.info.group - 1;
+        
+        if group < 1 {
+            group = self.info.group_highest;
+        }
+
+        self.group_focus_to(group)
+    }
+
+    pub fn group_focus_to(&mut self, group: i32) -> Result<(), Error> {
+        let group = group.clamp(1, self.info.group_highest);
+
+        let output = self.workspaces
+            .iter()
+            .find(|w| w.num / 10 == group)
+            .map(|w| w.output.as_str());
+
+        if let Some(output) = output {
+            self.connection.run_command(format!("focus output {output}"))?;
+        }
+
+        let num = group * 10 + self.info.position;
+
+        self.connection.run_command(format!("workspace number {num}"))?;
+
+        Ok(())
+    }
+
+    pub fn group_move_next(&mut self) -> Result<(), Error> {
+        let mut group = self.info.group + 1;
+        
+        if group > self.info.group_highest {
+            group = 1;
+        }
+
+        self.group_move_to(group)
+    }
+
+    pub fn group_move_prev(&mut self) -> Result<(), Error> {
+        let mut group = self.info.group - 1;
+        
+        if group < 1 {
+            group = self.info.group_highest;
+        }
+
+        self.group_move_to(group)
+    }
+
+    pub fn group_move_to(&mut self, group: i32) -> Result<(), Error> {
+        let group = group.clamp(1, self.info.group_highest);
+
+        let output = self.workspaces
+            .iter()
+            .find(|w| w.num / 10 == group)
+            .map(|w| w.output.as_str());
+        
+        if let Some(output) = output {
+            self.connection.run_command(format!(
+                "[con_id=__focused__] move container to output {output}, focus"
+            ))?;
+        }
+
+        let num = group * 10 + self.info.position;
 
         self.connection.run_command(format!(
             "[con_id=__focused__] move container to workspace number {num}, focus"

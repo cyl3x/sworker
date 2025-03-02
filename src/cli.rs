@@ -12,6 +12,16 @@ pub enum Cli {
         #[arg(value_parser = parse_position)]
         position: PositionCommand,
     },
+    FocusGroup {
+        /// Focus in the given direction or position.
+        #[arg(value_parser = parse_position)]
+        position: PositionCommand,
+    },
+    MoveGroup {
+        /// Focus in the given direction or position.
+        #[arg(value_parser = parse_position)]
+        position: PositionCommand,
+    },
 }
 
 #[derive(Debug, Clone)]
