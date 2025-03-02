@@ -44,6 +44,8 @@ fn main() -> Result<(), swayipc::Error> {
             }
         }
         Cli::Daemon => {
+            Manager::new(Connection::new()?)?.reorder()?;
+
             for event in Connection::new()?.subscribe([swayipc::EventType::Workspace])? {
                 match event {
                     Ok(event) => process_event(Connection::new()?, event)?,
