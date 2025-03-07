@@ -71,7 +71,7 @@ impl Manager {
     }
 
     pub fn position_focus_to(&mut self, position: i32) -> Result<(), Error> {
-        let num = self.positioner.group * 10 + position.clamp(1, 9);
+        let num = self.positioner.position_to(position);
 
         self.connection.run_command(format!("workspace number {num}"))?;
 
@@ -113,7 +113,7 @@ impl Manager {
     }
 
     pub fn position_move_to(&mut self, position: i32) -> Result<(), Error> {
-        let num = self.positioner.saturating_position_to(position);
+        let num = self.positioner.position_to(position);
 
         self.connection.run_command(format!(
             "[con_id=__focused__] move container to workspace number {num}"

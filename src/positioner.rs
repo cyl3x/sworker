@@ -85,6 +85,10 @@ impl Positioner {
         self.group * 10 + position
     }
 
+    pub fn position_to(&self, position: i32) -> i32 {
+        self.group * 10 + position.clamp(1, 9)
+    }
+
     pub fn is_start(&self) -> bool {
         self.position == 1
     }
