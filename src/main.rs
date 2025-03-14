@@ -49,7 +49,7 @@ fn main() -> Result<(), swayipc::Error> {
         Cli::Daemon => {
             Manager::new(Connection::new()?)?.reorder()?;
 
-            for event in Connection::new()?.subscribe([swayipc::EventType::Workspace])? {
+            for event in Connection::new()?.subscribe([swayipc::EventType::Workspace, swayipc::EventType::Output])? {
                 match event {
                     Ok(event) => process_event(Connection::new()?, event)?,
                     Err(err) => eprintln!("Error processing event: {err}"),
