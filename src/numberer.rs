@@ -12,7 +12,7 @@ impl Numberer {
 
         let mut group = 1;
 
-        for output in outputs.iter() {
+        for output in Self::rect_ordered_outputs(outputs) {
             for (w_idx, workspace) in workspaces.iter().filter(|ws| ws.output == output.name).enumerate() {
                 let position = w_idx + 1;
 
@@ -76,5 +76,16 @@ impl Numberer {
         }
 
         Ok(())
+    }
+
+    fn rect_ordered_outputs(outputs: &[Output]) -> Vec<&Output> {
+        let mut outputs = outputs.iter().collect::<Vec<_>>();
+
+        outputs.sort_by(|o1, o2| match o1.rect.y.cmp(&o2.rect.y) {
+            Ordering::Equal => o1.rect.x.cmp(&o2.rect.x),
+            x => x,
+        });
+
+        outputs
     }
 }
