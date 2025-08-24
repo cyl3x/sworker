@@ -49,8 +49,8 @@ impl Numberer {
     }
 
     pub fn reorder(&self, connection: &mut swayipc::Connection) -> Result<(), swayipc::Error> {
-        let mut reindex_down = vec![];
         let mut reindex_up = vec![];
+        let mut reindex_down = vec![];
 
         for workspace in connection.get_workspaces()? {
             let Some(num) = self.0.get(&workspace.id) else {
@@ -64,14 +64,17 @@ impl Numberer {
                 workspace.num.to_string()
             };
 
-            match num.cmp(&workspace.num) {
-                Ordering::Less => reindex_down.push(format!("rename workspace '{source}{name}' to '{num}{name}'")),
-                Ordering::Greater => reindex_up.push(format!("rename workspace '{source}{name}' to '{num}{name}'")),
-                _ => {}
-            }
+            reindex_up.push(format!("rename workspace '{source}{name}' to '1{num}{name}'"));
+            reindex_down.push(format!("rename workspace '1{num}{name}' to '{num}{name}'"));
         }
 
-        for command in reindex_down.iter().chain(reindex_up.iter().rev()) {
+        let command = reindex_up.iter()
+            .chain(reindex_down.iter())
+            .map(|s| &**s)
+            .collect::<Vec<&str>>()
+            .join("; ");
+
+        if !command.is_empty() {
             connection.run_command(command)?;
         }
 
