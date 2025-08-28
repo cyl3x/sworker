@@ -1,8 +1,8 @@
 [package]
 name = "sworker"
-version = "1.2.0"
+version = "1.2.1"
 authors = ["cyl3x <cyl3x@posteo.de>"]
-edition = "2021"
+edition = "2024"
 repository = "https://github.com/cyl3x/sworker"
 description = "Workspace utility and manager for sway"
 license-file = "LICENSE"

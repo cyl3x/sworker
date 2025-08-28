@@ -20,7 +20,10 @@
 
       perSystem = { config, self', inputs', pkgs, system, ... }: {
         rust-project = {
-          crates.sworker.crane.args = {};
+          crates.sworker.crane.args = {
+            CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
+            CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
+          };
           src = pkgs.lib.cleanSourceWith {
             src = ./.;
             filter = config.rust-project.crane-lib.filterCargoSources;
@@ -31,6 +34,8 @@
           inherit (self'.packages) sworker;
           default = sworker;
         };
+
+        packages.default = self'.packages.sworker;
 
         devShells.default = pkgs.mkShell {
           inputsFrom = [ self'.devShells.rust ];
