@@ -16,15 +16,16 @@ impl Manager {
         let workspaces = connection.get_workspaces()?;
         let outputs = connection.get_outputs()?;
 
-        let focused = workspaces
-            .iter()
-            .find(|w| w.focused)
-            .expect("focused workspace should always be focused");
+        let mut nodes = 0;
 
-        let focused_node = connection
-            .get_tree()?
-            .find(|node| node.node_type == NodeType::Workspace && focused.id == node.id)
-            .expect("workspace of get_workspaces should be in get_tree");
+        if let Some(focused) = workspaces.iter().find(|w| w.focused).or_else(|| workspaces.first()) {
+            let focused_node = connection
+                .get_tree()?
+                .find(|node| node.node_type == NodeType::Workspace && focused.id == node.id)
+                .expect("workspace of get_workspaces should be in get_tree");
+
+            nodes = focused_node.nodes.len();
+        }
 
         Ok(Self {
             numberer: Numberer::new(&workspaces, &outputs),
@@ -32,7 +33,7 @@ impl Manager {
             workspaces,
             outputs,
             connection,
-            nodes: focused_node.nodes.len(),
+            nodes,
         })
     }
 
