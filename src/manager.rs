@@ -116,9 +116,8 @@ impl Manager {
     pub fn position_move_to(&mut self, position: i32) -> Result<(), Error> {
         let num = self.positioner.position_to(position);
 
-        self.connection.run_command(format!(
-            "[con_id=__focused__] move container to workspace number {num}"
-        ))?;
+        self.connection
+            .run_command(format!("[con_id=__focused__] move container to workspace number {num}"))?;
 
         Ok(())
     }
@@ -179,9 +178,8 @@ impl Manager {
                 .run_command(format!("[con_id=__focused__] move container to output {output}, focus"))?;
         }
 
-        self.connection.run_command(format!(
-            "[con_id=__focused__] move container to workspace number {num}"
-        ))?;
+        self.connection
+            .run_command(format!("[con_id=__focused__] move container to workspace number {num}"))?;
 
         Ok(())
     }

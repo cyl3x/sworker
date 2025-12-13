@@ -1,7 +1,7 @@
 use clap::Parser;
 use cli::{Action, Cli};
 use swayipc::Connection;
-use sworker::{process_event, Manager};
+use sworker::{Manager, process_event};
 
 mod cli;
 

@@ -68,7 +68,8 @@ impl Numberer {
             reindex_down.push(format!("rename workspace '1{num}{name}' to '{num}{name}'"));
         }
 
-        let command = reindex_up.iter()
+        let command = reindex_up
+            .iter()
             .chain(reindex_down.iter())
             .map(|s| &**s)
             .collect::<Vec<&str>>()
