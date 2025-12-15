@@ -14,18 +14,18 @@ impl Positioner {
     /// Create a new Positioner from a list of workspaces.
     /// The list is assumed to ordered already by [`Numberer`](struct@numberer::Numberer).
     pub fn new(workspaces: &[Workspace]) -> Self {
-        let focused = workspaces.iter().find(|ws| ws.focused).unwrap();
+        let focused = workspaces.iter().find_map(|ws| if ws.focused { Some(ws.num) } else { None }).unwrap_or(10);
 
         Self {
-            group: focused.num / 10,
-            group_highest: workspaces.iter().map(|ws| ws.num / 10).max().unwrap(),
-            position: focused.num % 10,
+            group: focused / 10,
+            group_highest: workspaces.iter().map(|ws| ws.num / 10).max().unwrap_or(1),
+            position: focused % 10,
             position_highest: workspaces
                 .iter()
-                .filter(|ws| ws.num / 10 == focused.num / 10)
+                .filter(|ws| ws.num / 10 == focused / 10)
                 .map(|ws| ws.num % 10)
                 .max()
-                .unwrap(),
+                .unwrap_or(0),
         }
     }
 
