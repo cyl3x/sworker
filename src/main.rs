@@ -52,6 +52,7 @@ fn main() -> Result<(), swayipc::Error> {
             for event in Connection::new()?.subscribe([swayipc::EventType::Workspace, swayipc::EventType::Output])? {
                 match event {
                     Ok(event) => process_event(Connection::new()?, event)?,
+                    Err(swayipc::Error::Io(e)) if e.kind() == std::io::ErrorKind::UnexpectedEof => break,
                     Err(err) => eprintln!("Error processing event: {err}"),
                 }
             }
