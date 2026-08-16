@@ -1,35 +1,50 @@
-use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
 use swayipc::{Output, Workspace};
 
+use crate::{NUMBERS_PER_GROUP, POSITIONS_PER_GROUP};
+
+const TEMP_PREFIX: &str = "999";
+
 /// A struct to manage the numbering of workspaces.
-pub struct Numberer(BTreeMap<i64, i32>);
+pub(crate) struct Numberer(BTreeMap<i64, i32>);
 
 impl Numberer {
-    pub fn new(workspaces: &[Workspace], outputs: &[Output]) -> Self {
+    /// Number every workspace after the position it holds on its output.
+    ///
+    /// The workspaces are taken in the order sway reports them.
+    pub(crate) fn new(workspaces: &[Workspace], outputs: &[Output]) -> Self {
         let mut numberer = Self(BTreeMap::new());
-
         let mut group = 1;
 
-        for output in Self::rect_ordered_outputs(outputs) {
-            for (w_idx, workspace) in workspaces.iter().filter(|ws| ws.output == output.name).enumerate() {
-                let position = w_idx + 1;
+        // Outputs are numbered as they are placed, top to bottom and left to right.
+        let mut outputs = outputs.iter().collect::<Vec<_>>();
+        outputs.sort_by(|left, right| left.rect.y.cmp(&right.rect.y).then(left.rect.x.cmp(&right.rect.x)));
 
-                // additional groups per output should also start with a position of 1: position / 10
-                let num = group * 10 + position + (position / 10);
+        for output in outputs {
+            let mut index = 0;
 
-                numberer.0.insert(workspace.id, num as i32);
+            for workspace in workspaces.iter().filter(|workspace| workspace.output == output.name) {
+                // An output with more workspaces than a group holds continues in the
+                // next group, again starting at position 1.
+                let num = (group + index / POSITIONS_PER_GROUP) * NUMBERS_PER_GROUP + index % POSITIONS_PER_GROUP + 1;
+
+                numberer.0.insert(workspace.id, num);
+                index += 1;
             }
 
-            group = (numberer.0.values().max().unwrap_or(&0) / 10 + 1) as usize;
+            // Skip every group this output took, so the next one starts on a free group.
+            if index > 0 {
+                group += (index - 1) / POSITIONS_PER_GROUP + 1;
+            }
         }
 
         numberer
     }
 
-    pub fn prepend_at(&mut self, num: i32) -> i32 {
-        for (_, ws_num) in self.0.iter_mut() {
+    /// Free `num` by pushing it and everything after it one position up.
+    pub(crate) fn prepend_at(&mut self, num: i32) -> i32 {
+        for ws_num in self.0.values_mut() {
             if *ws_num >= num {
                 *ws_num += 1;
             }
@@ -38,8 +53,9 @@ impl Numberer {
         num
     }
 
-    pub fn append_at(&mut self, num: i32) -> i32 {
-        for (_, ws_num) in self.0.iter_mut() {
+    /// Free the position after `num` by pushing everything after it one position up.
+    pub(crate) fn append_at(&mut self, num: i32) -> i32 {
+        for ws_num in self.0.values_mut() {
             if *ws_num > num {
                 *ws_num += 1;
             }
@@ -48,15 +64,26 @@ impl Numberer {
         num + 1
     }
 
-    pub fn reorder(&self, connection: &mut swayipc::Connection) -> Result<(), swayipc::Error> {
-        let mut reindex_up = vec![];
-        let mut reindex_down = vec![];
+    /// The commands renaming every workspace that is not numbered as [`Self::new`] determined.
+    pub(crate) fn rename_commands(&self, workspaces: &[Workspace]) -> Vec<String> {
+        let mut reindex_up = Vec::new();
+        let mut reindex_down = Vec::new();
 
-        for workspace in connection.get_workspaces()? {
-            let Some(num) = self.0.get(&workspace.id) else {
+        for workspace in workspaces {
+            let Some(&num) = self.0.get(&workspace.id) else {
                 continue;
             };
-            let name = workspace.name.trim_start_matches(char::is_numeric);
+
+            if workspace.num == num {
+                continue;
+            }
+
+            let name = workspace.name.trim_start_matches(|char: char| char.is_ascii_digit());
+
+            // A workspace that cannot be addressed would take another one with it, so it rather keeps the number it has.
+            let Some(quote) = quote(name) else {
+                continue;
+            };
 
             let source = if workspace.num < 0 {
                 String::new()
@@ -64,32 +91,32 @@ impl Numberer {
                 workspace.num.to_string()
             };
 
-            reindex_up.push(format!("rename workspace '{source}{name}' to '1{num}{name}'"));
-            reindex_down.push(format!("rename workspace '1{num}{name}' to '{num}{name}'"));
+            reindex_up.push(format!(
+                "rename workspace {quote}{source}{name}{quote} to {quote}{TEMP_PREFIX}{num}{name}{quote}"
+            ));
+            reindex_down.push(format!(
+                "rename workspace {quote}{TEMP_PREFIX}{num}{name}{quote} to {quote}{num}{name}{quote}"
+            ));
         }
 
-        let command = reindex_up
-            .iter()
-            .chain(reindex_down.iter())
-            .map(|s| &**s)
-            .collect::<Vec<&str>>()
-            .join("; ");
+        reindex_up.append(&mut reindex_down);
 
-        if !command.is_empty() {
-            connection.run_command(command)?;
-        }
-
-        Ok(())
+        reindex_up
     }
+}
 
-    fn rect_ordered_outputs(outputs: &[Output]) -> Vec<&Output> {
-        let mut outputs = outputs.iter().collect::<Vec<_>>();
-
-        outputs.sort_by(|o1, o2| match o1.rect.y.cmp(&o2.rect.y) {
-            Ordering::Equal => o1.rect.x.cmp(&o2.rect.x),
-            x => x,
-        });
-
-        outputs
+/// The quote character `name` has to be wrapped in for a sway command.
+///
+/// Sway keeps backslashes instead of unescaping them, so a quote can only be avoided
+/// rather than escaped, and a trailing odd run of them swallows the closing quote.
+fn quote(name: &str) -> Option<char> {
+    if name.chars().rev().take_while(|char| *char == '\\').count() % 2 == 1 {
+        None
+    } else if !name.contains('\'') {
+        Some('\'')
+    } else if !name.contains('"') {
+        Some('"')
+    } else {
+        None
     }
 }

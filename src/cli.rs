@@ -55,7 +55,7 @@ impl clap::ValueEnum for Action {
         ]
     }
 
-    fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
+    fn to_possible_value(&self) -> Option<PossibleValue> {
         match self {
             Action::Next => Some(PossibleValue::new("next")),
             Action::Prev => Some(PossibleValue::new("prev")),
@@ -68,7 +68,7 @@ impl clap::ValueEnum for Action {
             Action::Position(7) => Some(PossibleValue::new("7")),
             Action::Position(8) => Some(PossibleValue::new("8")),
             Action::Position(9) => Some(PossibleValue::new("9")),
-            _ => None,
+            Action::Position(_) => None,
         }
     }
 }
