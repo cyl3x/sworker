@@ -4,8 +4,6 @@ Workspace utility and manager for sway.
 sworker groups all workspaces according to their output with an increment of 10.
 All workspaces in a group are indexed in order starting from 1.
 
-`sworker` is also compatible with sworkstyle.
-
 <details><summary><b>Example sway config</b></summary>
 
 ```bash
@@ -77,33 +75,72 @@ bindsym Mod4+Shift+minus exec sworker move --new prev
 
 </details>
 
-## Focus commands
-With `sworker focus` it is possible to focus a workspace in the current group.  
-Valid values are `next`, `prev` or a number from `1-9`.  
-If `next` or `prev` is given, the focus will be wrapped at the start or end.
-Before wrapping, a empty workspace is created if the focused workspace is not empty.
-If the given number is higher then the current workspace count, a new workspace will be created at the end.
+## How it works
+`sworker` is focused on dynamic workspace creation and stable group and workspace numbers.
 
-With `--new` a new workspace is inserted at the target position instead of focusing the one already there.
-The workspace at that position and every one after it is pushed one position up.
+A workspace number is read as group and position: `23` is the third workspace of the second group.
 
-With `sworker focus-group` it is possible to focus another group.  
-Valid values are `next`, `prev` or a number from `1-9`. 
-If `next` or `prev` is given, the focus will be wrapped at the start or end.
+### Groups and outputs
+Every output gets its own group, in the order the outputs are arranged: top to bottom, then left to right.
+A group reserves ten numbers, so group 1 holds `11` to `19`, group 2 holds `21` to `29`, and so on.
+Groups are never created by hand, they come and go with the outputs.
 
-## Move commands
-With `sworker move` it is possible to move the focused window in the current group.  
-Valid values are `next`, `prev` or a number from `1-9`.  
-If `next` or `prev` is given, the window will be wrapped at the start or end.
-Before wrapping, a new workspace is created if the focused window isn't alone in it's workspace.
-If the given number is higher then the current workspace count, a new workspace will be created at the end.
+`sworker focus-group` focuses another group, `sworker move-group` moves the focused window to it.
+Both take `next`, `prev` or a number from `1-9`:
 
-With `--new` the window is moved to a new workspace inserted at the target position instead of the one already there.
-The workspace at that position and every one after it is pushed one position up.
+- `next` and `prev` wrap around at the first and last group
+- a number higher than the last group selects the last one, no group is created
+- the position inside the group is kept, so going from `12` to group 3 lands on `32`
+- if that position does not exist in the target group yet, it is created at its end
 
-With `sworker move-group` it is possible to move the focused window to another group.  
-Valid values are `next`, `prev` or a number from `1-9`. 
-If `next` or `prev` is given, the window will be wrapped at the start or end.
+Since a group belongs to an output, both commands are also the way to switch screens.
+
+#### When an output goes away
+`sworker` never puts more than nine workspaces in a group, sway can when an output is disconnected.
+Sway moves its workspaces to a remaining output, filling leftover workspaces of that output.
+If the workspaces moved exceed nine, an additional group is added, therefore no workspaces are squashed together.
+
+Two outputs, five workspaces on the first and six on the second:
+
+```
+   output 1            output 2
+[11] .. [15]         [21] .. [26]
+   group 1              group 2
+```
+
+After unplugging output 2, all eleven workspaces sit on output 1:
+
+```
+              output 1
+[11] .. [19]          [21][22]
+   group 1             group 2
+```
+
+Nothing about this is permanent.
+As soon as the workspaces are spread over the outputs again, the numbering closes up and every output is back to a single group.
+
+### Workspaces
+Inside a group the workspaces are numbered `1` to `9` in the order sway lists them, without gaps.
+Because of this, `sworker focus 2` always means "the second workspace of the current group".
+It does not matter which output is focused or how many workspaces exist, so the same keybind keeps doing the same thing.
+
+Workspaces are not set up in advance, they are created as soon as a position is requested that isn't there yet.
+Sway removes a workspace again once its last window is gone, and `sworker` renumbers everything that follows, so the numbering closes up and stays gap-free.
+
+`sworker focus` focuses a workspace in the current group, `sworker move` moves the focused window to it.
+Both take `next`, `prev` or a number from `1-9`:
+
+- a number higher than the current workspace count creates a new workspace at the end
+- `next` and `prev` wrap around at the first and last workspace
+- before wrapping, a new workspace is created instead: `focus` does so if the current workspace is not empty, `move` if the window isn't alone in it
+- `--new` inserts a new workspace at the target position instead of using the one already there, pushing that workspace and every one after it one position up
+
+A group is limited to the nine positions `x1` to `x9`.
+Once it is full, no further workspace is inserted and the one already at the target position is used instead.
+
+### Names are kept
+Only the leading number of a workspace name is rewritten, the rest is left untouched.
+That is what makes `sworker` work alongside tools that name workspaces themselves, such as [sworkstyle](https://github.com/Lyr-7D1h/swayest_workstyle).
 
 ## Daemon
 Starting the daemon with `sworker daemon` will continuously reorder all workspaces.
