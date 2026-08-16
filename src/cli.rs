@@ -11,11 +11,17 @@ pub enum Cli {
     Focus {
         /// Direction or position to focus.
         action: Action,
+        /// Insert a new workspace at the position instead of focusing the one already there.
+        #[clap(short, long)]
+        new: bool,
     },
     /// Move the focused container to the desired position of the focused group.
     Move {
         /// Direction or position to focus.
         action: Action,
+        /// Insert a new workspace at the position instead of moving to the one already there.
+        #[clap(short, long)]
+        new: bool,
     },
     /// Change focus to the desired group.
     /// Position will be retained.

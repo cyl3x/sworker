@@ -75,6 +75,11 @@ impl Positioner {
         self.group * NUMBERS_PER_GROUP + position.clamp(1, POSITIONS_PER_GROUP)
     }
 
+    /// The number of `position` in the current group, clamped to the positions the group holds.
+    pub(crate) fn saturating_position_to(&self, position: i32) -> i32 {
+        self.group * NUMBERS_PER_GROUP + position.clamp(1, self.position_highest.max(1))
+    }
+
     pub(crate) const fn is_start(&self) -> bool {
         self.position == 1
     }

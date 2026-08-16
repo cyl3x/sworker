@@ -11,15 +11,15 @@ fn main() -> Result<(), swayipc::Error> {
     let mut manager = Manager::new(&mut connection)?;
 
     match cli {
-        Cli::Focus { action } => match action {
-            Action::Next => manager.position_focus_next()?,
-            Action::Prev => manager.position_focus_prev()?,
-            Action::Position(position) => manager.position_focus_to(position)?,
+        Cli::Focus { action, new } => match action {
+            Action::Next => manager.position_focus_next(new)?,
+            Action::Prev => manager.position_focus_prev(new)?,
+            Action::Position(position) => manager.position_focus_to(position, new)?,
         },
-        Cli::Move { action } => match action {
-            Action::Next => manager.position_move_next()?,
-            Action::Prev => manager.position_move_prev()?,
-            Action::Position(position) => manager.position_move_to(position)?,
+        Cli::Move { action, new } => match action {
+            Action::Next => manager.position_move_next(new)?,
+            Action::Prev => manager.position_move_prev(new)?,
+            Action::Position(position) => manager.position_move_to(position, new)?,
         },
         Cli::FocusGroup { action } => match action {
             Action::Next => manager.group_focus_next()?,

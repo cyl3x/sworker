@@ -67,6 +67,12 @@ bindsym Mod4+Prior exec sworker move prev
 bindsym Mod4+Next exec sworker move next
 bindsym Mod4+Shift+Prior exec sworker move-group next
 bindsym Mod4+Shift+Next exec sworker move-group prev
+
+# Insert a new workspace after or before the focused one
+bindsym Mod4+plus exec sworker focus --new next
+bindsym Mod4+minus exec sworker focus --new prev
+bindsym Mod4+Shift+plus exec sworker move --new next
+bindsym Mod4+Shift+minus exec sworker move --new prev
 ```
 
 </details>
@@ -76,6 +82,10 @@ With `sworker focus` it is possible to focus a workspace in the current group.
 Valid values are `next`, `prev` or a number from `1-9`.  
 If `next` or `prev` is given, the focus will be wrapped at the start or end.
 Before wrapping, a empty workspace is created if the focused workspace is not empty.
+If the given number is higher then the current workspace count, a new workspace will be created at the end.
+
+With `--new` a new workspace is inserted at the target position instead of focusing the one already there.
+The workspace at that position and every one after it is pushed one position up.
 
 With `sworker focus-group` it is possible to focus another group.  
 Valid values are `next`, `prev` or a number from `1-9`. 
@@ -86,6 +96,10 @@ With `sworker move` it is possible to move the focused window in the current gro
 Valid values are `next`, `prev` or a number from `1-9`.  
 If `next` or `prev` is given, the window will be wrapped at the start or end.
 Before wrapping, a new workspace is created if the focused window isn't alone in it's workspace.
+If the given number is higher then the current workspace count, a new workspace will be created at the end.
+
+With `--new` the window is moved to a new workspace inserted at the target position instead of the one already there.
+The workspace at that position and every one after it is pushed one position up.
 
 With `sworker move-group` it is possible to move the focused window to another group.  
 Valid values are `next`, `prev` or a number from `1-9`. 

@@ -6,6 +6,9 @@ use crate::{NUMBERS_PER_GROUP, POSITIONS_PER_GROUP};
 
 const TEMP_PREFIX: &str = "999";
 
+/// The number a workspace that does not exist yet is relocated from, i.e. one beyond every real one.
+const UNNUMBERED: i32 = i32::MAX;
+
 /// A struct to manage the numbering of workspaces.
 pub(crate) struct Numberer(BTreeMap<i64, i32>);
 
@@ -42,26 +45,33 @@ impl Numberer {
         numberer
     }
 
-    /// Free `num` by pushing it and everything after it one position up.
-    pub(crate) fn prepend_at(&mut self, num: i32) -> i32 {
+    /// Renumber the workspace at `from` to `to`, shifting everything in between the other way.
+    ///
+    /// The position `from` gives up is the one `to` takes, so the group keeps its size and this
+    /// also fits a group that is already full. A `from` no workspace holds gives up nothing and
+    /// grows the group by the position it frees instead.
+    pub(crate) fn relocate(&mut self, from: i32, to: i32) -> i32 {
         for ws_num in self.0.values_mut() {
-            if *ws_num >= num {
+            if *ws_num == from {
+                *ws_num = to;
+            } else if *ws_num >= to && *ws_num < from {
                 *ws_num += 1;
+            } else if *ws_num > from && *ws_num <= to {
+                *ws_num -= 1;
             }
         }
 
-        num
+        to
+    }
+
+    /// Free `num` by pushing it and everything after it one position up.
+    pub(crate) fn prepend_at(&mut self, num: i32) -> i32 {
+        self.relocate(UNNUMBERED, num)
     }
 
     /// Free the position after `num` by pushing everything after it one position up.
     pub(crate) fn append_at(&mut self, num: i32) -> i32 {
-        for ws_num in self.0.values_mut() {
-            if *ws_num > num {
-                *ws_num += 1;
-            }
-        }
-
-        num + 1
+        self.relocate(UNNUMBERED, num + 1)
     }
 
     /// The commands renaming every workspace that is not numbered as [`Self::new`] determined.

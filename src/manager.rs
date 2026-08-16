@@ -47,8 +47,9 @@ impl<'a> Manager<'a> {
         run_command(self.connection, commands.join("; "))
     }
 
-    pub fn position_focus_next(&mut self) -> Result<(), Error> {
-        let num = if self.positioner.is_end() && !self.positioner.is_full() && self.nodes > 0 {
+    /// Focus the next position, inserting a workspace there if `new`.
+    pub fn position_focus_next(&mut self, new: bool) -> Result<(), Error> {
+        let num = if (new || self.positioner.is_end()) && !self.positioner.is_full() && self.nodes > 0 {
             let num = self.numberer.append_at(self.positioner.num());
             self.reorder()?;
 
@@ -60,8 +61,9 @@ impl<'a> Manager<'a> {
         run_command(self.connection, format!("workspace number {num}"))
     }
 
-    pub fn position_focus_prev(&mut self) -> Result<(), Error> {
-        let num = if self.positioner.is_start() && !self.positioner.is_full() && self.nodes > 0 {
+    /// Focus the previous position, inserting a workspace there if `new`.
+    pub fn position_focus_prev(&mut self, new: bool) -> Result<(), Error> {
+        let num = if (new || self.positioner.is_start()) && !self.positioner.is_full() && self.nodes > 0 {
             let num = self.numberer.prepend_at(self.positioner.num());
             self.reorder()?;
 
@@ -73,14 +75,20 @@ impl<'a> Manager<'a> {
         run_command(self.connection, format!("workspace number {num}"))
     }
 
-    pub fn position_focus_to(&mut self, position: i32) -> Result<(), Error> {
-        let num = self.positioner.position_to(position);
+    /// Focus `position`, inserting a workspace before the one already there if `new`.
+    pub fn position_focus_to(&mut self, position: i32, new: bool) -> Result<(), Error> {
+        let num = if new {
+            self.insert_position(position, self.nodes == 0)?
+        } else {
+            self.positioner.position_to(position)
+        };
 
         run_command(self.connection, format!("workspace number {num}"))
     }
 
-    pub fn position_move_next(&mut self) -> Result<(), Error> {
-        let num = if self.positioner.is_end() && !self.positioner.is_full() && self.nodes > 1 {
+    /// Move the focused container to the next position, inserting a workspace there if `new`.
+    pub fn position_move_next(&mut self, new: bool) -> Result<(), Error> {
+        let num = if (new || self.positioner.is_end()) && !self.positioner.is_full() && self.nodes > 1 {
             let num = self.numberer.append_at(self.positioner.num());
             self.reorder()?;
 
@@ -95,8 +103,9 @@ impl<'a> Manager<'a> {
         )
     }
 
-    pub fn position_move_prev(&mut self) -> Result<(), Error> {
-        let num = if self.positioner.is_start() && !self.positioner.is_full() && self.nodes > 1 {
+    /// Move the focused container to the previous position, inserting a workspace there if `new`.
+    pub fn position_move_prev(&mut self, new: bool) -> Result<(), Error> {
+        let num = if (new || self.positioner.is_start()) && !self.positioner.is_full() && self.nodes > 1 {
             let num = self.numberer.prepend_at(self.positioner.num());
             self.reorder()?;
 
@@ -111,8 +120,13 @@ impl<'a> Manager<'a> {
         )
     }
 
-    pub fn position_move_to(&mut self, position: i32) -> Result<(), Error> {
-        let num = self.positioner.position_to(position);
+    /// Move the focused container to `position`, inserting a workspace before the one already there if `new`.
+    pub fn position_move_to(&mut self, position: i32, new: bool) -> Result<(), Error> {
+        let num = if new {
+            self.insert_position(position, self.nodes <= 1)?
+        } else {
+            self.positioner.position_to(position)
+        };
 
         run_command(
             self.connection,
@@ -160,6 +174,28 @@ impl<'a> Manager<'a> {
             self.connection,
             format!("[con_id=__focused__] move container to workspace number {num}"),
         )
+    }
+
+    /// Free `position` for a new workspace and return its number.
+    ///
+    /// `vacates` tells whether the command leaves the focused workspace empty.
+    /// Sway destroys it then, so the group keeps the size it has and the focused workspace can simply
+    /// take `position` itself, which needs no free position and therefore fits a full group too.
+    fn insert_position(&mut self, position: i32, vacates: bool) -> Result<i32, Error> {
+        // A group without a free position cannot grow, so the workspace already there is used.
+        if !vacates && self.positioner.is_full() {
+            return Ok(self.positioner.position_to(position));
+        }
+
+        let num = if vacates {
+            self.numberer.relocate(self.positioner.num(), self.positioner.saturating_position_to(position))
+        } else {
+            self.numberer.prepend_at(self.positioner.position_to(position))
+        };
+
+        self.reorder()?;
+
+        Ok(num)
     }
 
     /// The output holding the group of `num`.
